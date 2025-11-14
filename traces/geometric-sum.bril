@@ -1,0 +1,40 @@
+# ARGS: 3 4 5
+@main(a: int, r: int, n: int) {
+  speculate;
+  one: int = const 1;
+  r_n: int = const 1;
+  i: int = const 0;
+  cond: bool = lt i n;
+  __guard_cond__0: bool = const true;
+  guard __guard_cond__0 .__speculate_aborted;
+  r_n: int = mul r_n r;
+  i: int = add i one;
+  cond: bool = lt i n;
+  __guard_cond__1: bool = const true;
+  guard __guard_cond__1 .__speculate_aborted;
+  r_n: int = mul r_n r;
+  i: int = add i one;
+  cond: bool = lt i n;
+  __guard_cond__2: bool = const true;
+  guard __guard_cond__2 .__speculate_aborted;
+  commit;
+  jmp .__speculate_done;
+.__speculate_aborted:
+  one: int = const 1;
+  r_n: int = const 1;
+  i: int = const 0;
+.loop:
+  cond: bool = lt i n;
+.__speculate_done:
+  br cond .body .done;
+.body:
+  r_n: int = mul r_n r;
+  i: int = add i one;
+  jmp .loop;
+.done:
+  one_minus_r_n: int = sub one r_n;
+  numerator: int = mul a one_minus_r_n;
+  one_minus_r: int = sub one r;
+  sum: int = div numerator one_minus_r;
+  print sum;
+}

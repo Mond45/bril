@@ -1,0 +1,40 @@
+# ARGS: 100
+@main(num: int) {
+  speculate;
+  zer: int = const 0;
+  one: int = const 1;
+  fac: int = const 2;
+  ispos: bool = lt one num;
+  __guard_cond__0: bool = const true;
+  guard __guard_cond__0 .__speculate_aborted;
+  quo: int = div num fac;
+  tmp: int = mul quo fac;
+  mod: int = sub num tmp;
+  iszero: bool = eq mod zer;
+  __guard_cond__1: bool = const true;
+  guard __guard_cond__1 .__speculate_aborted;
+  commit;
+  jmp .__speculate_done;
+.__speculate_aborted:
+  zer: int = const 0;
+  one: int = const 1;
+  fac: int = const 2;
+.loopcheck:
+  ispos: bool = lt one num;
+  br ispos .loopbody .loopend;
+.loopbody:
+  quo: int = div num fac;
+  tmp: int = mul quo fac;
+  mod: int = sub num tmp;
+  iszero: bool = eq mod zer;
+  br iszero .ifyes .ifno;
+.ifyes:
+.__speculate_done:
+  print fac;
+  num: int = div num fac;
+  jmp .loopcheck;
+.ifno:
+  fac: int = add fac one;
+  jmp .loopcheck;
+.loopend:
+}
