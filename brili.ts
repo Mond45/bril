@@ -270,8 +270,7 @@ function getArgument(
   const args = instr.args || [];
   if (args.length <= index) {
     throw error(
-      `${instr.op} expected at least ${
-        index + 1
+      `${instr.op} expected at least ${index + 1
       } arguments; got ${args.length}`,
     );
   }
@@ -440,6 +439,12 @@ function evalCall(instr: bril.Operation, state: State): Action {
   return NEXT;
 }
 
+let tracing = false;
+let tracingEnabled = false;
+let traceInstrs: bril.Instruction[] = [];
+let traceEndIdx = 0;
+let guardIdx = 0;
+
 /**
  * Interpret an instruction in a given environment, possibly updating the
  * environment. If the instruction branches to a new label, return that label;
@@ -447,6 +452,32 @@ function evalCall(instr: bril.Operation, state: State): Action {
  * instruction or "end" to terminate the function.
  */
 function evalInstr(instr: bril.Instruction, state: State): Action {
+  if (tracingEnabled) {
+    traceEndIdx = findFunc("main", state.funcs).instrs.indexOf(instr)
+    if (instr.op === 'br') {
+      const guardConst: bril.Instruction = {
+        "dest": `__guard_cond__${guardIdx}`,
+        "op": "const",
+        "type": "bool",
+        "value": get(state.env, instr.args![0]) as boolean
+      }
+      const guardInstr: bril.Instruction = {
+        "args": [
+          `__guard_cond__${guardIdx}`
+        ],
+        "labels": [
+          "__speculate_aborted"
+        ],
+        "op": "guard"
+      };
+      guardIdx++;
+      traceInstrs.push(guardConst, guardInstr);
+    } else if (instr.op === 'ret' || instr.op === 'print' || instr.op === 'call') {
+      tracingEnabled = false;
+    } else if (instr.op !== 'jmp') {
+      traceInstrs.push(instr);
+    }
+  }
   state.icount += BigInt(1);
 
   // Check that we have the right number of arguments.
@@ -647,7 +678,8 @@ function evalInstr(instr: bril.Instruction, state: State): Action {
           } else return val.toFixed(17);
         } else return val.toString();
       });
-      console.log(...values);
+      if (!tracing)
+        console.log(...values);
       return NEXT;
     }
 
@@ -989,6 +1021,13 @@ function evalProg(prog: bril.Program) {
     args.splice(pidx, 1);
   }
 
+  const tracing_idx = args.indexOf('-t');
+  if (tracing_idx > -1) {
+    tracing = true;
+    tracingEnabled = true;
+    args.splice(tracing_idx, 1);
+  }
+
   // Remaining arguments are for the main function.k
   const expected = main.args || [];
   const newEnv = parseMainArguments(expected, args);
@@ -1007,6 +1046,14 @@ function evalProg(prog: bril.Program) {
     throw error(
       `Some memory locations have not been freed by end of execution.`,
     );
+  }
+
+  if (tracing) {
+    const tracedProgram = {
+      instrs: traceInstrs,
+      traceEndIdx
+    }
+    console.log(JSON.stringify(tracedProgram));
   }
 
   if (profiling) {
