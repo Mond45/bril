@@ -444,6 +444,7 @@ let tracingEnabled = false;
 let traceInstrs: bril.Instruction[] = [];
 let traceEndIdx = 0;
 let guardIdx = 0;
+const MAX_TRACE_INSTRS = 16;
 
 /**
  * Interpret an instruction in a given environment, possibly updating the
@@ -452,7 +453,7 @@ let guardIdx = 0;
  * instruction or "end" to terminate the function.
  */
 function evalInstr(instr: bril.Instruction, state: State): Action {
-  if (tracingEnabled) {
+  if (tracingEnabled && traceInstrs.length < MAX_TRACE_INSTRS) {
     traceEndIdx = findFunc("main", state.funcs).instrs.indexOf(instr)
     if (instr.op === 'br') {
       const guardConst: bril.Instruction = {
